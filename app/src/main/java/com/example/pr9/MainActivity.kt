@@ -3,6 +3,7 @@ package com.example.pr9
 import android.opengl.Visibility
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.text.Editable
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -21,6 +22,7 @@ class MainActivity : AppCompatActivity(), Adapter.OnItemClickListener {
     val inputType = findViewById<EditText>(R.id.input_name)
     val inputArea = findViewById<EditText>(R.id.input_name)
     val inputSubPrice = findViewById<EditText>(R.id.input_name)
+    val inputForm = findViewById<LinearLayout>(R.id.input_form)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,13 +41,27 @@ class MainActivity : AppCompatActivity(), Adapter.OnItemClickListener {
         Toast.makeText(this, "Item $position clicked", Toast.LENGTH_SHORT).show()
         clickedItem = operatorsList[position]
         clickedItemPosition = position
-        /// TODO: 08.12.2020 написать метод редактирвоания
+        inputName.setText(clickedItem.name)
+        inputType.setText(clickedItem.type)
+        inputArea.setText(clickedItem.area.toString())
+        inputSubPrice.setText(clickedItem.subPrice.toString())
+        inputForm.visibility = View.VISIBLE
+        var checker = true
+        val index = clickedItemPosition
+        while (checker){
+            val newItem = Input().inputChecker(inputName.text.toString(),inputType.text.toString(),inputArea.text.toString(),inputSubPrice.text.toString())
+            if(newItem.name!=""||btnCancelClicked){
+                operatorsList.add(index,newItem)
+                adapter.notifyItemInserted(index)
+                checker=false
+                btnCancelClicked = false
+            } else Toast.makeText(applicationContext, newItem.type, Toast.LENGTH_SHORT).show()
+        }
         adapter.notifyItemChanged(position)
     }
 
     fun insertItem(view: View){
         val index = operatorsList.size
-        val inputForm = findViewById<LinearLayout>(R.id.input_form)
         inputForm.visibility = View.VISIBLE
         var checker = true
         while (checker){
