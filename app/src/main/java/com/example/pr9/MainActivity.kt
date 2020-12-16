@@ -1,84 +1,54 @@
 package com.example.pr9
 
-import android.opengl.Visibility
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.text.Editable
-import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.Toast
+import android.widget.*
 import androidx.recyclerview.widget.LinearLayoutManager
-import kotlinx.android.synthetic.main.activity_main.*
+import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class MainActivity : AppCompatActivity(), Adapter.OnItemClickListener {
-    private var btnCancelClicked:Boolean = false
-    private var clickedItemPosition:Int = -1
-    private lateinit var clickedItem : OperatorItem
-    private val operatorsList = ArrayList<OperatorItem>()/// TODO: 07.12.2020 В будующем дописать взаимодействию с бд
-    private val adapter = Adapter(operatorsList, this)
-    val inputName = findViewById<EditText>(R.id.input_name)
-    val inputType = findViewById<EditText>(R.id.input_name)
-    val inputArea = findViewById<EditText>(R.id.input_name)
-    val inputSubPrice = findViewById<EditText>(R.id.input_name)
-    val inputForm = findViewById<LinearLayout>(R.id.input_form)
+class MainActivity : AppCompatActivity() {
+
+    private val operatorsList = ArrayList<OperatorDB>()
+
+    lateinit var recyclerViewManager:LinearLayoutManager
+
+    lateinit var operatordb:OperatorDatabase
+
+    val buttonAdd = findViewById<Button>(R.id.addBtn)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        recycler_operators.adapter = adapter
-        recycler_operators.layoutManager = LinearLayoutManager(this)
-        recycler_operators.setHasFixedSize(true)
-        val buttonCancel = findViewById<Button>(R.id.button_cancel)
-        buttonCancel.setOnClickListener{
-            btnCancelClicked = true
+        recyclerViewManager = LinearLayoutManager(this)
+
+        operatordb = Room.databaseBuilder(applicationContext,OperatorDatabase::class.java,"Operator").build()
+
+        buttonAdd.setOnClickListener {
+            val intent = Intent(this,WorkWithOperator::class.java)
+            intent.putExtra("MODE","add")
+            startActivity(intent)
         }
+
     }
 
-    override fun onItemClick(position: Int) {
-        Toast.makeText(this, "Item $position clicked", Toast.LENGTH_SHORT).show()
-        clickedItem = operatorsList[position]
-        clickedItemPosition = position
-        inputName.setText(clickedItem.name)
-        inputType.setText(clickedItem.type)
-        inputArea.setText(clickedItem.area.toString())
-        inputSubPrice.setText(clickedItem.subPrice.toString())
-        inputForm.visibility = View.VISIBLE
-        var checker = true
-        val index = clickedItemPosition
-        while (checker){
-            val newItem = Input().inputChecker(inputName.text.toString(),inputType.text.toString(),inputArea.text.toString(),inputSubPrice.text.toString())
-            if(newItem.name!=""||btnCancelClicked){
-                operatorsList.add(index,newItem)
-                adapter.notifyItemInserted(index)
-                checker=false
-                btnCancelClicked = false
-            } else Toast.makeText(applicationContext, newItem.type, Toast.LENGTH_SHORT).show()
-        }
-        adapter.notifyItemChanged(position)
-    }
-
-    fun insertItem(view: View){
-        val index = operatorsList.size
-        inputForm.visibility = View.VISIBLE
-        var checker = true
-        while (checker){
-            val newItem = Input().inputChecker(inputName.text.toString(),inputType.text.toString(),inputArea.text.toString(),inputSubPrice.text.toString())
-            if(newItem.name!=""||btnCancelClicked){
-                operatorsList.add(index,newItem)
-                adapter.notifyItemInserted(index)
-                checker=false
-                btnCancelClicked = false
-            } else Toast.makeText(applicationContext, newItem.type, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun deleteItem(view: View){
-        if (clickedItemPosition!=-1){
-            operatorsList.removeAt(clickedItemPosition)
-            adapter.notifyItemRemoved(clickedItemPosition)
+    override fun onStart(){
+        super.onStart()
+        CoroutineScope(Dispatchers.Main).launch {
+            val operators:List<OperatorDB>? = null
+            withContext(Dispatchers.IO){
+                val operators = operatordb.operatorDao().getAll()
+            }
+            val operatorsAdapter = OperatorAdapter(operators!!,this@MainActivity)
+            val recyclerView = findViewById<RecyclerView>(R.id.recycler_operators)
+            recyclerView.layoutManager = recyclerViewManager
+            recyclerView.adapter = operatorsAdapter
         }
     }
 }
